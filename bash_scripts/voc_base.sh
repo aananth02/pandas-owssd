@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-PROJ_ROOT=/PANDAS
+PROJ_ROOT=/home/aananth2/pandas_owssd
 export PYTHONPATH=${PROJ_ROOT}
 cd ${PROJ_ROOT}
 
-SAVE_PATH=/pandas_experiments
-SSL_CKPT=/moco_v2_800ep_pretrain.pth.tar
-DATA_PATH=/VOC2012/
-SPLIT_PATH=/PANDAS/voc_splits
+SAVE_PATH=/home/aananth2/pandas-owssd/pandas_experiments_voc_base
+SSL_CKPT=/home/aananth2/pandas-owssd/moco/moco_v2_800ep_pretrain.pth.tar
+DATA_PATH=/iccp/garvita4/pandas/VOC2012/
+SPLIT_PATH=/iccp/garvita4/pandas/voc_splits
 
 EXPT_NAME=voc_base_phase
 LOG_FILE=${SAVE_PATH}/logs/${EXPT_NAME}.log
@@ -23,4 +23,6 @@ python -u train_base_network.py \
         --warmup_iters 350 \
         --warmup_factor 0.05 \
         --freeze_bn 0 \
-        --output_dir ${OUTPUT_DIR} >${LOG_FILE}
+        --output_dir ${OUTPUT_DIR} >${LOG_FILE} \
+        # --resume /home/aananth2/pandas-owssd/pandas_experiments_voc_base/voc_base_phase/model_best.pth \
+        # --test-only 

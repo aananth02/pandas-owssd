@@ -13,9 +13,11 @@ This is PyTorch code for our CoLLAs 2024 paper available on [arXiv](https://arxi
 We have tested the code with the packages and versions in [requirements.txt](requirements.txt).
 We recommend setting up a `conda` environment with these same package versions:
 
+*Note: Anaconda can cause some issues, rather use Miniconda*
+
 ```
-conda create -n pandas_ncd python=3.9.16
-conda activate pandas_ncd
+conda create -n pandas_owssd python=3.9.16
+conda activate pandas_owssd
 conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.3 -c pytorch -c nvidia
 conda install -c conda-forge faiss-cpu
 conda install numpy==1.24.3
@@ -24,6 +26,11 @@ conda install -c conda-forge tqdm
 conda install scipy
 conda install -c conda-forge pycocotools
 pip install lvis
+```
+
+Note: If there is a 
+```
+
 ```
 
 ## Download Datasets
@@ -66,6 +73,12 @@ To replicate our base phase on VOC, we will use [voc_base.sh](./bash_scripts/voc
 - Then, to run the base training on VOC, run:
     ```
     ./bash_scripts/voc_base.sh
+    ```
+    Note that the above command needs to be run from the pandas-owssd dir and not inside the bash_scripts dir
+
+    If needed, please run
+    ```
+    chmod +x ./bash_scripts/voc_base.sh
     ```
 
 ## Base Phase on COCO
