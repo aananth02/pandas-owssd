@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-PROJ_ROOT=/home/aananth2/pandas_owssd
+PROJ_ROOT=/iccp/aananth2/pandas-owssd
 export PYTHONPATH=${PROJ_ROOT}
 cd ${PROJ_ROOT}
 
-SAVE_PATH=/home/aananth2/pandas-owssd/pandas_experiments_voc_base
-SSL_CKPT=/home/aananth2/pandas-owssd/moco/moco_v2_800ep_pretrain.pth.tar
+SAVE_PATH=/iccp/aananth2/pandas-owssd/pandas_experiments_voc_base
+SSL_CKPT=/iccp/aananth2/pandas-owssd/moco/moco_v2_800ep_pretrain.pth.tar
 DATA_PATH=/iccp/garvita4/pandas/VOC2012/
 SPLIT_PATH=/iccp/garvita4/pandas/voc_splits
 
@@ -16,7 +16,7 @@ python -u train_base_network.py \
         --data_path ${DATA_PATH} \
         --split_path ${SPLIT_PATH} \
         --voc_split 10-10 \
-        --num_classes 11 \
+        --num_classes 11 
         --batch-size 16 \
         --epochs 85 \
         --lr 0.02 \

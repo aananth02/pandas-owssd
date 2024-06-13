@@ -28,9 +28,11 @@ conda install -c conda-forge pycocotools
 pip install lvis
 ```
 
-Note: If there is a 
+Using the above instuctions, if you have an issue with cuda detection then run:
 ```
-
+conda uninstall pytorch 
+pip install torch
+pip install torchvision
 ```
 
 ## Download Datasets
