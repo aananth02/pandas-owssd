@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-PROJ_ROOT=/PANDAS
+PROJ_ROOT=/iccp/aananth2/pandas-owssd
 export PYTHONPATH=${PROJ_ROOT}
 cd ${PROJ_ROOT}
 
-SAVE_PATH=/pandas_experiments
-BASE_CKPT=/pandas_experiments/voc_base_phase/model_recent.pth
-DATA_PATH=/VOC2012/
-SPLIT_PATH=/PANDAS/voc_splits
+SAVE_PATH=/iccp/aananth2/pandas-owssd/pandas_experiments_voc_ncd_main
+BASE_CKPT=/iccp/aananth2/pandas-owssd/pandas_experiments_voc_base/voc_base_phase/model_best.pth
+DATA_PATH=/iccp/garvita4/pandas/VOC2012/
+SPLIT_PATH=/iccp/garvita4/pandas/voc_splits
 
 
 # run PANDAS with three k-means seeds and various numbers of novel clusters

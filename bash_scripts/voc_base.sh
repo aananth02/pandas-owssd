@@ -16,7 +16,7 @@ python -u train_base_network.py \
         --data_path ${DATA_PATH} \
         --split_path ${SPLIT_PATH} \
         --voc_split 10-10 \
-        --num_classes 11 
+        --num_classes 11 \
         --batch-size 16 \
         --epochs 85 \
         --lr 0.02 \
@@ -24,5 +24,5 @@ python -u train_base_network.py \
         --warmup_factor 0.05 \
         --freeze_bn 0 \
         --output_dir ${OUTPUT_DIR} >${LOG_FILE} \
-        # --resume /home/aananth2/pandas-owssd/pandas_experiments_voc_base/voc_base_phase/model_best.pth \
-        # --test-only 
+        --resume /iccp/aananth2/pandas-owssd/pandas_experiments_voc_base/voc_base_phase/model_best.pth \
+        --test-only 

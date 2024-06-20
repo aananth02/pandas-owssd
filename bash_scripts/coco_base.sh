@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-PROJ_ROOT=/PANDAS
+PROJ_ROOT=/iccp/aananth2/pandas-owssd
 export PYTHONPATH=${PROJ_ROOT}
 cd ${PROJ_ROOT}
 
-SAVE_PATH=/pandas_experiments
-SSL_CKPT=/moco_v2_800ep_pretrain.pth.tar
+SAVE_PATH=/iccp/aananth2/pandas-owssd/pandas_experiments_voc_base
+SSL_CKPT=/iccp/aananth2/pandas-owssd/moco/moco_v2_800ep_pretrain.pth.tar
 IMAGES_PATH=/Microsoft-COCO-2017
 COCO_HALF_ANNOTATION_ROOT=/Microsoft-COCO-2017/annotations/
 
