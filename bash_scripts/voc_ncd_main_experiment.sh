@@ -32,6 +32,9 @@ do
             --proba_norm l1 \
             --similarity_metric invert_square \
             --background_classifier softmax \
-            --output_dir ${OUTPUT_DIR} >${LOG_FILE}
+            --output_dir ${OUTPUT_DIR} >${LOG_FILE} \
+            --device cuda:1
+            # --resume /iccp/aananth2/pandas-owssd/pandas_experiments_voc_ncd_main/voc_discovery_10_10_clusters_250_pandas_seed_42/ncd_model.pth \
+            # --test-only 
 done
 done

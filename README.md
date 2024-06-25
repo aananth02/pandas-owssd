@@ -26,6 +26,9 @@ conda install -c conda-forge tqdm
 conda install scipy
 conda install -c conda-forge pycocotools
 pip install lvis
+pip install umap
+pip install umap-learn
+pip install umap-learn[plot]
 ```
 
 Using the above instuctions, if you have an issue with cuda detection then run:

@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+PROJ_ROOT=/iccp/aananth2/pandas-owssd
+export PYTHONPATH=${PROJ_ROOT}
+cd ${PROJ_ROOT}
+
+SAVE_PATH=/iccp/aananth2/pandas-owssd/pandas_owssd_experiments_voc_ncd_main
+BASE_CKPT=/iccp/aananth2/pandas-owssd/pandas_experiments_voc_base/voc_base_phase/model_best.pth
+DATA_PATH=/iccp/garvita4/pandas/VOC2012/
+SPLIT_PATH=/iccp/garvita4/pandas/voc_splits
+
+SEED=42
+NUM_CLUSTERS=10
+
+EXPT_NAME=voc_discovery_10_10_clusters_${NUM_CLUSTERS}_pandas_seed_${SEED}
+LOG_FILE=${SAVE_PATH}/logs/${EXPT_NAME}.log
+OUTPUT_DIR=${SAVE_PATH}/${EXPT_NAME}
+python -u ${PROJ_ROOT}/vae_and_ncd_experiment.py \
+        --dataset voc \
+        --data_path ${DATA_PATH} \
+        --split_path ${SPLIT_PATH} \
+        --base_num_classes 11 \
+        --num_classes 21 \
+        --num_clusters ${NUM_CLUSTERS} \
+        --base_detection_ckpt ${BASE_CKPT} \
+        --kmeans_n_init 10 \
+        --kmeans_max_iter 1000 \
+        --kmeans_seed ${SEED} \
+        --prototype_init pandas \
+        --proba_norm l1 \
+        --similarity_metric invert_square \
+        --background_classifier softmax \
+        --output_dir ${OUTPUT_DIR} >${LOG_FILE} \
+        --device cuda:0
+
+
+# run PANDAS with three k-means seeds and various numbers of novel clusters
+# for SEED in 42 43 44;
+# do
+# for NUM_CLUSTERS in 10 20 50 100 250 500 1000;
+# do
+#     EXPT_NAME=voc_discovery_10_10_clusters_${NUM_CLUSTERS}_pandas_seed_${SEED}
+#     LOG_FILE=${SAVE_PATH}/logs/${EXPT_NAME}.log
+#     OUTPUT_DIR=${SAVE_PATH}/${EXPT_NAME}
+#     python -u ${PROJ_ROOT}/vae_and_ncd_experiment.py \
+#             --dataset voc \
+#             --data_path ${DATA_PATH} \
+#             --split_path ${SPLIT_PATH} \
+#             --base_num_classes 11 \
+#             --num_classes 21 \
+#             --num_clusters ${NUM_CLUSTERS} \
+#             --base_detection_ckpt ${BASE_CKPT} \
+#             --kmeans_n_init 10 \
+#             --kmeans_max_iter 1000 \
+#             --kmeans_seed ${SEED} \
+#             --prototype_init pandas \
+#             --proba_norm l1 \
+#             --similarity_metric invert_square \
+#             --background_classifier softmax \
+#             --output_dir ${OUTPUT_DIR} >${LOG_FILE} \
+#             --device cuda:1
+#             # --resume /iccp/aananth2/pandas-owssd/pandas_experiments_voc_ncd_main/voc_discovery_10_10_clusters_250_pandas_seed_42/ncd_model.pth \
+#             # --test-only 
+# done
+# done
+

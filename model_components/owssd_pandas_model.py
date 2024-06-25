@@ -32,6 +32,13 @@ from umap import plot as umap_plot
 from pathlib import Path
 
 
+"""
+1) We are no longer planning to perform clustering using prototypes
+2) That being said, there is no point in training any prototypes at all since we are using the VAE ensemble method
+3) Have tried to modify code accordingly...and for the sake of the codebase consider prototype to be another way of calling VAE ensemble
+"""
+
+
 def pd_mat(input1, input2):
     return 0.5 * torch.cdist(input1, input2) ** 2
 
@@ -83,7 +90,8 @@ def loss_function(reconstructed, features, mu, logvar):
 
 class OWSSDModel(object):
     """
-    PANDAS NCD object detection model that uses prototype learning.
+    PANDAS NCD object detection model that uses prototype learning, that has been modified to use a VAE ensemble.
+    Here each vae model is trained on one of the extracted features and then we use this enseble to find novelty as in OWSSD paper
     """
 
     def __init__(self, num_classes, num_base_classes, base_checkpoint, feature_dim=1024, device='cuda:1',
@@ -106,7 +114,7 @@ class OWSSDModel(object):
         self.proba_norm = proba_norm
         self.background_classifier = background_classifier
         self.ncd_checkpoint = ncd_checkpoint
-        self.prototype_init = prototype_init
+        self.prototype_init = prototype_init # Not changing so as to not worry about the function call
         self.n_init = kmeans_n_init
         self.max_iter = kmeans_max_iter
         self.base_ids = base_ids
@@ -142,14 +150,21 @@ class OWSSDModel(object):
         #                                      IDs overlapping
 
     def initialize_model(self, discovery_loader=None, novel_loader=None, base_loader=None, test_loader=None):
+        print("You have entered the initialize function of the OWSSD Pandas model - congratulations")
         if self.ncd_checkpoint is not None:
             # load in model from ckpt
             print('\nInitializing model using: NCD Checkpoint')
+            print("NOT SURE WHY THIS RAN...NCD CHECKPOINT DEFAULT VALUE IS NONE...TERMINATING")
+            exit()
             self.load_model(self.ncd_checkpoint)
         else:
-            if self.prototype_init == 'gt_prototypes':
+            if self.prototype_init == 'gt_prototypes': # I suppose gt stands for ground truth protoypes
                 print('\nInitializing model using: GT Prototypes')
                 features_gt, labels_gt, _, _ = self.get_all_box_features_normalize(self.od_model, discovery_loader)
+                print("WHY HAS THE CODE ENTERED THE GT PROTOTYPE ZONE INSTEAD OF VAE CALCULATION- TERMINATING")
+                print("AS PER THE ORIGINAL PANDAS CODE, THIS PART WOULD SIGNIFY - prototype_init == gt_prototypes")
+                print("AS PER OUT NEW METHOD WE NEED THE CODE TO CALCULATE THE BASE VAE ENSEMBLE FIRST")
+                exit()
                 gt_prototypes, labels_prototypes = self.compute_prototypes_from_features(features_gt, labels_gt)
                 # since there might be missing labels or labels could be out of order,
                 # let's put the prototypes in the correct spot in the original array
@@ -162,11 +177,15 @@ class OWSSDModel(object):
                     self.initialize_model_cluster_novel_use_gt_owssd(self.od_model, base_loader, novel_loader, test_loader)
                 else:
                     print('Extracting features...')
+                    print("YOU HAVE ENTERED THE OWSSD PANDAS MODEL PYTHON FILE FOR MODEL INITIALIZATION")
+                    print("THIS PART IS RUN FOR EXPERIMENTS THAT ARE NOT BASED ON PANDAS METHOD AS A COMPARISON")
+                    print("If need to run experiment arises - edit owssd_pandas_model.py to remove this TERMINATION")
+                    exit()
                     _, _, features, _ = self.get_all_box_features_normalize(self.od_model, discovery_loader,
                                                                             included_features=['rpn'])
                     # cluster all features
                     self.initialize_model_offline_clustering(features)
-        self.num_prototypes = len(self.class_prototypes)
+        self.num_prototypes = len(self.class_prototypes) # This line would technically be meaningless right since we have no prototypes?
 
         # after initialization, change the score threshold and max detections per image
         print('\nChanging score threshold and maximum detections per image...')
@@ -223,25 +242,30 @@ class OWSSDModel(object):
 
         return model
 
-    def compute_prototypes_from_features(self, features_gt, labels_gt):
-        # compute gt prototypes
-        print('Computing GT prototypes...')
-        gt_prototypes = []
-        labels_for_prototypes = []
-        for l in range(self.num_classes - 1):
-            curr_lab = l + 1
-            ixs = torch.where(labels_gt == curr_lab)[0]
-            if len(ixs) == 0:
-                print('No features for label %d found.' % curr_lab)
-            else:
-                curr_feat = features_gt[ixs, :]
-                gt_prototypes.append(torch.mean(curr_feat, dim=0).unsqueeze(0))
-                labels_for_prototypes.append(curr_lab)  # labels are 1-based here
-        gt_prototypes = torch.cat(gt_prototypes, dim=0)
-        return gt_prototypes, labels_for_prototypes
+    # def compute_prototypes_from_features(self, features_gt, labels_gt):
+    #     # compute gt prototypes
+    #     print('Computing GT prototypes...')
+    #     gt_prototypes = []
+    #     labels_for_prototypes = []
+    #     for l in range(self.num_classes - 1):
+    #         curr_lab = l + 1
+    #         ixs = torch.where(labels_gt == curr_lab)[0]
+    #         if len(ixs) == 0:
+    #             print('No features for label %d found.' % curr_lab)
+    #         else:
+    #             curr_feat = features_gt[ixs, :]
+    #             gt_prototypes.append(torch.mean(curr_feat, dim=0).unsqueeze(0))
+    #             labels_for_prototypes.append(curr_lab)  # labels are 1-based here
+    #     gt_prototypes = torch.cat(gt_prototypes, dim=0)
+    #     return gt_prototypes, labels_for_prototypes
 
     def initialize_model_cluster_novel_use_gt_owssd(self, model, base_loader, novel_loader, test_loader):
         # pandas method: gt prototypes for base classes and clusters for novel data
+        # owssd_pandas method:
+        """
+        1) Train an Ensemble on the base classes, save the VAE to pth files
+        2) TODO: Pending...
+        """
         print('Extracting features...')
         
         feat_file = Path("features_gt.pt")
@@ -257,6 +281,10 @@ class OWSSDModel(object):
         print("novel loader len: ", len(novel_loader))
         print("features_gt: ", len(features_gt))
         print("labels_gt: ", len(labels_gt))
+
+
+        print("YOU HAVE REACHED THIS LINE FOR DEBUGGING PURPOSES, CONGRATULATIONS!!")
+        exit()
         
         thresholds = {}
         for class_name in self.class_names.keys():
@@ -308,6 +336,10 @@ class OWSSDModel(object):
                 train_losses = []
                 with torch.no_grad():
                     for feat_gt in class_features_gt:
+                        # TODO: Check shape and see the need for unsqueeze, might also have to change in line 420, remove
+                        # ...remove print and exit statement once done
+                        print(feat_gt.shape) 
+                        exit() 
                         reconstructed, mu, logvar = vae_model(feat_gt.unsqueeze(0))
                         loss = loss_function(reconstructed, feat_gt.unsqueeze(0), mu, logvar)
                         train_losses.append(loss.item())
@@ -359,15 +391,6 @@ class OWSSDModel(object):
         
         reducer_1_15 = umap.UMAP(n_neighbors=10)
         reduced_embed_1_15 = reducer_1_15.fit(class_features_novel_np)
-
-        height = 800
-        width = 800
-        dpi = plt.rcParams["figure.dpi"]
-        fig = plt.figure(figsize=(width / dpi, height / dpi))
-        ax = fig.add_subplot(111)
-        umap_plot.points(reduced_embed_1_15, ax=ax, labels=class_labels_novel_np)
-        fig.savefig('embed_class_9_neig_10.jpg', dpi=dpi)
-
 
         encoded_features = []
         for i in range(len(class_features_novel)):
