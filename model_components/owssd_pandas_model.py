@@ -82,10 +82,28 @@ class VAE(nn.Module):
         z = self.reparameterize(mu, logvar)
         reconstructed = self.decode(z)
         return reconstructed, mu, logvar
+    
+def normalize_data(data):
+    min_val = data.min()
+    max_val = data.max()
+    return (data - min_val) / (max_val - min_val)
 
 def loss_function(reconstructed, features, mu, logvar):
+    # Debugging: Check the range of reconstructed and features
+    print("Reconstructed min:", reconstructed.min().item(), "max:", reconstructed.max().item())
+    print("Features min:", features.min().item(), "max:", features.max().item())
+    
+    # Ensure values are in the [0, 1] range
+    assert (reconstructed >= 0).all() and (reconstructed <= 1).all(), "Reconstructed values out of range"
+    assert (features >= 0).all() and (features <= 1).all(), "Features values out of range"
+
+    # Binary Cross Entropy Loss
     BCE = F.binary_cross_entropy(reconstructed, features, reduction='sum')
+    
+    # Kullback-Leibler Divergence
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    
+    # Total Loss
     return BCE + KLD
 
 class OWSSDModel(object):
@@ -281,13 +299,9 @@ class OWSSDModel(object):
         print("novel loader len: ", len(novel_loader))
         print("features_gt: ", len(features_gt))
         print("labels_gt: ", len(labels_gt))
-
-
-        print("YOU HAVE REACHED THIS LINE FOR DEBUGGING PURPOSES, CONGRATULATIONS!!")
-        exit()
         
         thresholds = {}
-        for class_name in self.class_names.keys():
+        for class_name in self.class_names.keys(): # Imp to note that this for loop allows us to iterate over class keys names....therefore we will be able to train individual vae's
             if self.class_names[class_name][1] == 'base':
                 class_indices = (labels_gt == class_name).nonzero().squeeze()
                 class_labels_gt = torch.index_select(labels_gt, 0, class_indices)
@@ -301,9 +315,12 @@ class OWSSDModel(object):
                                                     test_size=0.33,
                                                     random_state=42)
 
+                X_train = normalize_data(X_train)
+                X_test = normalize_data(X_test)
+
                 vae_model = VAE(input_shape=1024).to(self.device)
                 optimizer = optim.Adam(vae_model.parameters(), lr=1e-3)
-                epochs = 40
+                epochs = 40 # Value seems to stabilize after 35 epochs
                 train_losses, val_losses = [], []
 
                 for epoch in range(epochs):
@@ -329,26 +346,27 @@ class OWSSDModel(object):
                 plt.xlabel('Epoch')
                 plt.ylabel('Loss')
                 plt.legend()
-                plt.savefig(f'vae_{class_name}_loss_curves.jpg', format='jpg', dpi=300, bbox_inches='tight')
+                plt.savefig(f'vae_training_curves/vae_{class_name}_loss_curves.jpg', format='jpg', dpi=300, bbox_inches='tight')
                 plt.close()
 
                 # Compute the threshold for anomaly detection
+                # I suppose this threshold is going to be on a per class basis
                 train_losses = []
                 with torch.no_grad():
                     for feat_gt in class_features_gt:
-                        # TODO: Check shape and see the need for unsqueeze, might also have to change in line 420, remove
-                        # ...remove print and exit statement once done
-                        print(feat_gt.shape) 
-                        exit() 
-                        reconstructed, mu, logvar = vae_model(feat_gt.unsqueeze(0))
-                        loss = loss_function(reconstructed, feat_gt.unsqueeze(0), mu, logvar)
+                        normalize_feat_gt = normalize_data(feat_gt.unsqueeze(0))
+                        reconstructed, mu, logvar = vae_model(normalize_feat_gt)
+                        loss = loss_function(reconstructed, normalize_feat_gt, mu, logvar)
                         train_losses.append(loss.item())
 
                 threshold = np.mean(train_losses) + np.std(train_losses)
                 print("Threshold: ", threshold)
                 thresholds[class_name] = threshold    
-                torch.save(vae_model.state_dict(), f"voc_class_{class_name}.pth")
+                torch.save(vae_model.state_dict(), f"VAE_model_checkpoints/voc_class_{class_name}.pth")
         
+        print("YOU HAVE REACHED THIS LINE FOR DEBUGGING PURPOSES, CONGRATULATIONS!!")
+        exit()
+
         feat_test_file = Path("features_test.pt")
         if feat_test_file.exists():
             features_test = torch.load('features_test.pt')
