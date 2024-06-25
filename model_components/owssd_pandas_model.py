@@ -45,36 +45,53 @@ def pd_mat(input1, input2):
 class VAE(nn.Module):
     def __init__(self, **kwargs):
         super(VAE, self).__init__()
-        self.encoder_hidden_layer = nn.Linear(
-            in_features=kwargs["input_shape"], out_features=256
+        self.encoder1 = nn.Linear(
+            in_features=kwargs["input_shape"], out_features=512
         )
-        self.encoder_mu_layer = nn.Linear(
-            in_features=256, out_features=64
+        self.encoder2 = nn.Linear(
+            in_features=512, out_features=256
         )
-        self.encoder_logvar_layer = nn.Linear(
-            in_features=256, out_features=64
+        self.encoder3 = nn.Linear(
+            in_features=256, out_features=128
         )
-        self.decoder_hidden_layer = nn.Linear(
-            in_features=64, out_features=256
+        self.encoder_mu = nn.Linear(
+            in_features=128, out_features=128
         )
-        self.decoder_output_layer = nn.Linear(
-            in_features=256, out_features=kwargs["input_shape"]
+        self.encoder_logvar = nn.Linear(
+            in_features=128, out_features=128
+        )
+        self.decoder1 = nn.Linear(
+            in_features=128, out_features=128
+        )
+        self.decoder2 = nn.Linear(
+            in_features=128, out_features=256
+        )
+        self.decoder3 = nn.Linear(
+            in_features=256, out_features=512
+        )
+        self.decoder4 = nn.Linear(
+            in_features=512, out_features=kwargs["input_shape"]
         )
 
     def encode(self, features):
-        hidden = F.relu(self.encoder_hidden_layer(features))
-        mu = self.encoder_mu_layer(hidden)
-        logvar = self.encoder_logvar_layer(hidden)
+        encode1_op = F.relu(self.encoder1(features))
+        encode2_op = F.relu(self.encoder2(encode1_op))
+        value = F.relu(self.encoder3(encode2_op))
+        mu = self.encoder_mu(value)
+        logvar = self.encoder_logvar(value)
         return mu, logvar
 
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
-        return mu + eps * std
+        return mu + (eps * std)
 
     def decode(self, z):
-        hidden = F.relu(self.decoder_hidden_layer(z))
-        reconstructed = torch.sigmoid(self.decoder_output_layer(hidden))
+        decoder1_op = F.relu(self.decoder1(z))
+        decoder2_op = F.relu(self.decoder2(decoder1_op))
+        decoder3_op = F.relu(self.decoder3(decoder2_op))
+        value = self.decoder4(decoder3_op)
+        reconstructed = torch.sigmoid(value)
         return reconstructed
 
     def forward(self, features):
@@ -320,7 +337,7 @@ class OWSSDModel(object):
 
                 vae_model = VAE(input_shape=1024).to(self.device)
                 optimizer = optim.Adam(vae_model.parameters(), lr=1e-3)
-                epochs = 40 # Value seems to stabilize after 35 epochs
+                epochs = 40 # Stabilizes around 35 epochs
                 train_losses, val_losses = [], []
 
                 for epoch in range(epochs):
@@ -364,7 +381,7 @@ class OWSSDModel(object):
                 thresholds[class_name] = threshold    
                 torch.save(vae_model.state_dict(), f"VAE_model_checkpoints/voc_class_{class_name}.pth")
         
-        print("YOU HAVE REACHED THIS LINE FOR DEBUGGING PURPOSES, CONGRATULATIONS!!")
+        print("CONGRATUILATION...TERMINATING")
         exit()
 
         feat_test_file = Path("features_test.pt")
@@ -377,62 +394,6 @@ class OWSSDModel(object):
             torch.save(labels_test, 'labels_test.pt')
         
         print("features_test: ", len(features_test))
-        
-        class_indices_1 = (labels_test == 9).nonzero().squeeze()
-        class_labels_test_1 = torch.index_select(labels_test, 0, class_indices_1)
-        class_features_test_1 = torch.index_select(features_test, 0, class_indices_1)
-        
-        novel_features = []
-        novel_labels = []
-
-        novel_features.append(class_features_test_1)
-        novel_labels.append(class_labels_test_1)
-
-        for class_name in self.class_names.keys():
-            if self.class_names[class_name][1] == 'novel':
-                class_indices = (labels_test == class_name).nonzero().squeeze()
-                print("class_indices: ", len(class_indices))
-                class_labels_test = torch.index_select(labels_test, 0, class_indices)
-                class_features_test = torch.index_select(features_test, 0, class_indices)
-                novel_features.append(class_features_test)
-                novel_labels.append(class_labels_test)
-
-        print("novel_features: ", len(novel_features))
-        print("novel_labels: ", len(novel_labels))
-
-        class_features_novel = torch.cat(novel_features)
-        class_features_novel_np = np.array(class_features_novel.cpu())
-        class_labels_novel = torch.cat(novel_labels)
-        class_labels_novel_np = np.array(class_labels_novel.cpu())
-        print("class_features_novel_np: ", class_features_novel_np.shape)
-        print("class_labels_novel_np: ", class_labels_novel_np.shape)
-        
-        reducer_1_15 = umap.UMAP(n_neighbors=10)
-        reduced_embed_1_15 = reducer_1_15.fit(class_features_novel_np)
-
-        encoded_features = []
-        for i in range(len(class_features_novel)):
-            feature_test = class_features_novel[i].to(self.device)
-            label_test = class_labels_novel[i].item()
-            vae_model = VAE(input_shape=1024).to(self.device)
-            vae_model.load_state_dict(torch.load("voc_class_9.pth"))
-            vae_model = vae_model.to(self.device)
-            with torch.no_grad():
-                mu, logvar = vae_model.encode(feature_test)
-            encoded_features.append(mu.cpu().detach().numpy())
-        
-        encoded_features = np.array(encoded_features)
-        reducer = umap.UMAP(n_neighbors=10)
-        reduced_embed = reducer.fit(encoded_features)
-
-        height = 800
-        width = 800
-        dpi = plt.rcParams["figure.dpi"]
-        fig = plt.figure(figsize=(width / dpi, height / dpi))
-        ax = fig.add_subplot(111)
-        umap_plot.points(reduced_embed, ax=ax, labels=class_labels_novel_np)
-        fig.savefig('embed_features_9_neig_10.jpg', dpi=dpi)
-            
 
         preds = []
         binary = []
@@ -452,7 +413,7 @@ class OWSSDModel(object):
                 if self.class_names[class_name][1] == 'base':
                     print("class_name: ", class_name)
                     vae_model = VAE(input_shape=1024).to(self.device)
-                    vae_model.load_state_dict(torch.load(f"voc_class_{class_name}.pth"))
+                    vae_model.load_state_dict(torch.load(f"VAE_model_checkpoints/voc_class_{class_name}.pth"))
                     vae_model = vae_model.to(self.device)
                     vae_model.eval()
                     with torch.no_grad():
